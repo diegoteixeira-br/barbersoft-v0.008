@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useRecaptcha } from "@/hooks/useRecaptcha";
+// import { useRecaptcha } from "@/hooks/useRecaptcha"; // TEMPORARILY DISABLED
 import { z } from "zod";
 
 const PLANS = [
@@ -27,7 +27,8 @@ export default function Auth() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
-  const { isReady: isRecaptchaReady, executeRecaptcha } = useRecaptcha();
+  // TEMPORARILY DISABLED: const { isReady: isRecaptchaReady, executeRecaptcha } = useRecaptcha();
+  const isRecaptchaReady = true;
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [view, setView] = useState<AuthView>("auth");
@@ -122,41 +123,9 @@ export default function Auth() {
     }
   };
 
-  const verifyRecaptcha = async (action: string): Promise<boolean> => {
-    const token = await executeRecaptcha(action);
-    if (!token) {
-      toast({
-        title: "Erro de segurança",
-        description: "Verificação não disponível. Tente novamente.",
-        variant: "destructive",
-      });
-      return false;
-    }
-
-    try {
-      const { data, error } = await supabase.functions.invoke("verify-recaptcha", {
-        body: { token, action },
-      });
-
-      if (error || !data?.success) {
-        toast({
-          title: "Verificação falhou",
-          description: "Por favor, tente novamente.",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      return true;
-    } catch (err) {
-      console.error("reCAPTCHA verification error:", err);
-      toast({
-        title: "Erro de verificação",
-        description: "Não foi possível validar. Tente novamente.",
-        variant: "destructive",
-      });
-      return false;
-    }
+  // TEMPORARILY DISABLED: reCAPTCHA verification
+  const verifyRecaptcha = async (_action: string): Promise<boolean> => {
+    return true;
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -344,29 +313,8 @@ export default function Auth() {
     }
   };
 
-  const RecaptchaLegal = () => (
-    <p className="text-xs text-muted-foreground text-center mt-4">
-      Este site é protegido pelo reCAPTCHA e a{" "}
-      <a
-        href="https://policies.google.com/privacy"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="underline hover:text-foreground"
-      >
-        Política de Privacidade
-      </a>{" "}
-      e{" "}
-      <a
-        href="https://policies.google.com/terms"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="underline hover:text-foreground"
-      >
-        Termos de Serviço
-      </a>{" "}
-      do Google se aplicam.
-    </p>
-  );
+  // TEMPORARILY DISABLED: RecaptchaLegal
+  const RecaptchaLegal = () => null;
 
   if (view === "forgot-password") {
     return (
