@@ -96,7 +96,7 @@ export function ProductsTable({ products, isLoading, onEdit, onDelete, onAdjustS
                 </TableCell>
                 <TableCell className="text-center">
                   {Number(product.cost_price) > 0 ? (() => {
-                    const margin = ((Number(product.sale_price) - Number(product.cost_price)) / Number(product.cost_price)) * 100;
+                    const margin = ((Number(product.sale_price) - Number(product.cost_price)) / Number(product.sale_price)) * 100;
                     const color = margin >= 30 ? "bg-green-500/20 text-green-400 border-green-500/30" 
                       : margin >= 10 ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" 
                       : "bg-red-500/20 text-red-400 border-red-500/30";

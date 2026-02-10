@@ -200,7 +200,7 @@ export function ProductFormModal({ open, onOpenChange, product }: ProductFormMod
               const costPrice = Number(form.watch("cost_price"));
               const salePrice = Number(form.watch("sale_price"));
               if (!costPrice || !salePrice) return null;
-              const margin = ((salePrice - costPrice) / costPrice) * 100;
+              const margin = ((salePrice - costPrice) / salePrice) * 100;
               const color = margin >= 30 ? "text-green-400" : margin >= 10 ? "text-yellow-400" : "text-red-400";
               return (
                 <div className={`text-sm font-medium ${color} flex items-center gap-1`}>
