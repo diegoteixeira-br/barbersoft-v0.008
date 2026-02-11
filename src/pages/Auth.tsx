@@ -233,29 +233,19 @@ export default function Auth() {
           const savedRefCode = localStorage.getItem("referral_code");
           if (savedRefCode) {
             try {
-              // Find referrer company by code
-              const { data: referrerCompany } = await supabase
+              // Get the newly created company
+              const { data: newCompany } = await supabase
                 .from("companies")
                 .select("id")
-                .eq("referral_code", savedRefCode)
+                .eq("owner_user_id", data.user!.id)
                 .maybeSingle();
 
-              if (referrerCompany) {
-                // Get the newly created company
-                const { data: newCompany } = await supabase
-                  .from("companies")
-                  .select("id")
-                  .eq("owner_user_id", data.user!.id)
-                  .maybeSingle();
-
-                if (newCompany && newCompany.id !== referrerCompany.id) {
-                  // Insert referral via edge function or direct insert won't work (no INSERT policy)
-                  // We'll store in metadata and handle in webhook
-                  await supabase
-                    .from("companies")
-                    .update({ signup_source: `ref:${savedRefCode}` })
-                    .eq("id", newCompany.id);
-                }
+              if (newCompany) {
+                // Use SECURITY DEFINER function to process referral (bypasses RLS)
+                await supabase.rpc("process_referral_signup", {
+                  p_referred_company_id: newCompany.id,
+                  p_referral_code: savedRefCode,
+                });
               }
             } catch (refErr) {
               console.error("Error processing referral:", refErr);

@@ -1615,6 +1615,10 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: never; Returns: boolean }
+      process_referral_signup: {
+        Args: { p_referral_code: string; p_referred_company_id: string }
+        Returns: boolean
+      }
       user_owns_company: { Args: { p_company_id: string }; Returns: boolean }
       user_owns_unit: { Args: { unit_id: string }; Returns: boolean }
     }
