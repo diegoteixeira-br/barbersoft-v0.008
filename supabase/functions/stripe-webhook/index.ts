@@ -142,7 +142,7 @@ serve(async (req) => {
         const invoice = event.data.object as Stripe.Invoice;
         const subscriptionId = invoice.subscription as string;
 
-        logStep("Invoice paid", { subscriptionId });
+        logStep("Invoice paid", { subscriptionId, billing_reason: (invoice as any).billing_reason });
 
         if (subscriptionId) {
           // When invoice is paid, subscription is active (trial ended successfully)
@@ -159,6 +159,86 @@ serve(async (req) => {
           } else {
             logStep("Company status confirmed active after payment");
           }
+
+          // === REFERRAL LOGIC ===
+          // Check if this is the first payment (subscription_create)
+          const billingReason = (invoice as any).billing_reason;
+          if (billingReason === "subscription_create") {
+            logStep("First payment detected, checking referral");
+
+            // Find the company that just paid
+            const { data: referredCompany } = await supabaseClient
+              .from("companies")
+              .select("id, signup_source")
+              .eq("stripe_subscription_id", subscriptionId)
+              .maybeSingle();
+
+            if (referredCompany?.signup_source?.startsWith("ref:")) {
+              const refCode = referredCompany.signup_source.replace("ref:", "");
+              logStep("Referral code found", { refCode });
+
+              // Find the referrer company
+              const { data: referrerCompany } = await supabaseClient
+                .from("companies")
+                .select("id, stripe_subscription_id")
+                .eq("referral_code", refCode)
+                .maybeSingle();
+
+              if (referrerCompany && referrerCompany.id !== referredCompany.id) {
+                logStep("Referrer found", { referrerId: referrerCompany.id });
+
+                try {
+                  // Create referral record
+                  await supabaseClient.from("referrals").insert({
+                    referrer_company_id: referrerCompany.id,
+                    referred_company_id: referredCompany.id,
+                    status: "pending",
+                  });
+
+                  // Create a 100% off coupon (duration: once)
+                  const coupon = await stripe.coupons.create({
+                    percent_off: 100,
+                    duration: "once",
+                    name: "Referral - 1 Mês Grátis",
+                  });
+                  logStep("Coupon created", { couponId: coupon.id });
+
+                  // Apply coupon to referred (new user) subscription
+                  await stripe.subscriptions.update(subscriptionId, {
+                    coupon: coupon.id,
+                  });
+                  logStep("Coupon applied to referred user");
+
+                  // Apply coupon to referrer subscription (if active)
+                  if (referrerCompany.stripe_subscription_id) {
+                    const referrerCoupon = await stripe.coupons.create({
+                      percent_off: 100,
+                      duration: "once",
+                      name: "Referral - 1 Mês Grátis (Indicador)",
+                    });
+                    await stripe.subscriptions.update(referrerCompany.stripe_subscription_id, {
+                      coupon: referrerCoupon.id,
+                    });
+                    logStep("Coupon applied to referrer");
+                  }
+
+                  // Update referral status to completed
+                  await supabaseClient
+                    .from("referrals")
+                    .update({
+                      status: "completed",
+                      completed_at: new Date().toISOString(),
+                    })
+                    .eq("referred_company_id", referredCompany.id);
+
+                  logStep("Referral completed successfully");
+                } catch (refError) {
+                  logStep("Error processing referral", { error: String(refError) });
+                }
+              }
+            }
+          }
+          // === END REFERRAL LOGIC ===
         }
         break;
       }

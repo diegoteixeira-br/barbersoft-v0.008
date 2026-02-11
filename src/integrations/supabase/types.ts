@@ -741,6 +741,7 @@ export type Database = {
           partner_started_at: string | null
           plan_status: string | null
           plan_type: string | null
+          referral_code: string | null
           signup_source: string | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
@@ -764,6 +765,7 @@ export type Database = {
           partner_started_at?: string | null
           plan_status?: string | null
           plan_type?: string | null
+          referral_code?: string | null
           signup_source?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -787,6 +789,7 @@ export type Database = {
           partner_started_at?: string | null
           plan_status?: string | null
           plan_type?: string | null
+          referral_code?: string | null
           signup_source?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -1269,6 +1272,48 @@ export type Database = {
             columns: ["unit_id"]
             isOneToOne: false
             referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          referred_company_id: string
+          referrer_company_id: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          referred_company_id: string
+          referrer_company_id: string
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          referred_company_id?: string
+          referrer_company_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referred_company_id_fkey"
+            columns: ["referred_company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_company_id_fkey"
+            columns: ["referrer_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]

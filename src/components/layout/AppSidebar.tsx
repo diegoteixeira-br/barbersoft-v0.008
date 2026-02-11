@@ -20,6 +20,7 @@ import {
   BarChart3,
   Headphones,
   Shield,
+  Gift,
 } from "lucide-react";
 import {
   Sidebar,
@@ -57,6 +58,7 @@ const menuItems = [
   { title: "Financeiro", url: "/financeiro", icon: DollarSign },
   { title: "Marketing", url: "/marketing", icon: Megaphone },
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
+  { title: "Indique e Ganhe", url: "/indicacoes", icon: Gift },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 

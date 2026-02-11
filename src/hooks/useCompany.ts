@@ -8,6 +8,7 @@ export interface Company {
   evolution_instance_name: string | null;
   evolution_api_key: string | null;
   owner_user_id: string;
+  referral_code: string | null;
   created_at: string;
   updated_at: string;
 }

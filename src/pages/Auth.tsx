@@ -39,6 +39,7 @@ export default function Auth() {
   // Get plan parameters from URL
   const planFromUrl = searchParams.get("plan");
   const billingFromUrl = searchParams.get("billing");
+  const refFromUrl = searchParams.get("ref");
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState("");
@@ -59,7 +60,10 @@ export default function Auth() {
     if (billingFromUrl) {
       setSelectedBilling(billingFromUrl);
     }
-  }, [planFromUrl, billingFromUrl]);
+    if (refFromUrl) {
+      localStorage.setItem("referral_code", refFromUrl);
+    }
+  }, [planFromUrl, billingFromUrl, refFromUrl]);
 
   const validateLogin = () => {
     try {
@@ -224,6 +228,40 @@ export default function Auth() {
 
         if (companyError) {
           console.error("Error creating company:", companyError);
+        } else {
+          // Handle referral code after company creation
+          const savedRefCode = localStorage.getItem("referral_code");
+          if (savedRefCode) {
+            try {
+              // Find referrer company by code
+              const { data: referrerCompany } = await supabase
+                .from("companies")
+                .select("id")
+                .eq("referral_code", savedRefCode)
+                .maybeSingle();
+
+              if (referrerCompany) {
+                // Get the newly created company
+                const { data: newCompany } = await supabase
+                  .from("companies")
+                  .select("id")
+                  .eq("owner_user_id", data.user!.id)
+                  .maybeSingle();
+
+                if (newCompany && newCompany.id !== referrerCompany.id) {
+                  // Insert referral via edge function or direct insert won't work (no INSERT policy)
+                  // We'll store in metadata and handle in webhook
+                  await supabase
+                    .from("companies")
+                    .update({ signup_source: `ref:${savedRefCode}` })
+                    .eq("id", newCompany.id);
+                }
+              }
+            } catch (refErr) {
+              console.error("Error processing referral:", refErr);
+            }
+            localStorage.removeItem("referral_code");
+          }
         }
 
         toast({

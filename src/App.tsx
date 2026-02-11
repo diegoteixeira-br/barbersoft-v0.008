@@ -55,6 +55,7 @@ const queryClient = new QueryClient();
 import AgendaDisplay from "./pages/AgendaDisplay";
 
 import Assinatura from "./pages/Assinatura";
+import Indicacoes from "./pages/Indicacoes";
 
 const ProtectedRoutes = () => (
   <SubscriptionProvider>
@@ -73,6 +74,7 @@ const ProtectedRoutes = () => (
           <Route path="/relatorios" element={<Relatorios />} />
           <Route path="/configuracoes" element={<Configuracoes />} />
           <Route path="/assinatura" element={<Assinatura />} />
+          <Route path="/indicacoes" element={<Indicacoes />} />
         </Routes>
       </UnitProvider>
     </SubscriptionGuard>
