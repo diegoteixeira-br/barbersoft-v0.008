@@ -214,7 +214,7 @@ export function PricingSection() {
                   className={`w-full ${
                     plan.highlighted
                       ? "bg-gold hover:bg-gold/90 text-black font-semibold"
-                      : "bg-muted hover:bg-muted/80"
+                      : "border border-gold/50 bg-gold/10 hover:bg-gold/20 text-foreground font-semibold"
                   }`}
                   onClick={() => navigate(`/auth?tab=signup&plan=${plan.name.toLowerCase()}&billing=${isAnnual ? 'annual' : 'monthly'}`)}
                 >

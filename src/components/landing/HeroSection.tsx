@@ -58,9 +58,9 @@ export function HeroSection() {
               <Button
                 size="lg"
                 className="bg-gold hover:bg-gold/90 text-black font-bold text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 glow-gold animate-pulse-subtle group w-full sm:w-auto"
-                onClick={() => navigate("/auth?tab=signup")}
+                onClick={() => document.getElementById("precos")?.scrollIntoView({ behavior: "smooth" })}
               >
-                Testar Grátis Agora
+                Conheça os Planos
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
               <Button
@@ -81,12 +81,6 @@ export function HeroSection() {
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
                 <span>7 dias grátis</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <span>Sem cartão de crédito</span>
               </div>
               <div className="flex items-center gap-2">
                 <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">

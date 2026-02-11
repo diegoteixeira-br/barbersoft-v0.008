@@ -83,8 +83,8 @@ export function Navbar() {
               <Button variant="outline" asChild>
                 <Link to="/auth">Entrar</Link>
               </Button>
-              <Button className="bg-gold hover:bg-gold/90 text-black font-semibold glow-gold" asChild>
-                <Link to="/auth?tab=signup">Testar Grátis</Link>
+              <Button className="bg-gold hover:bg-gold/90 text-black font-semibold glow-gold" onClick={() => scrollToSection("precos")}>
+                Conheça os Planos
               </Button>
             </div>
 
@@ -159,9 +159,9 @@ export function Navbar() {
                 </Button>
                 <Button 
                   className="w-full bg-gold hover:bg-gold/90 text-black font-semibold h-12 text-base glow-gold" 
-                  asChild
+                  onClick={() => scrollToSection("precos")}
                 >
-                  <Link to="/auth?tab=signup" onClick={() => setIsMobileMenuOpen(false)}>Testar Grátis</Link>
+                  Conheça os Planos
                 </Button>
               </div>
             </div>
