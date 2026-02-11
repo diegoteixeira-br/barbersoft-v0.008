@@ -90,7 +90,7 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-6 gap-8 mb-12">
           {/* Logo Column */}
           <div className="col-span-2">
-            <Link to="/" className="flex items-center gap-2 mb-4">
+            <Link to="/" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-2 mb-4">
               <div className="p-2 rounded-lg bg-gold/10">
                 <Scissors className="h-6 w-6 text-gold" />
               </div>
