@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Palette, Loader2, Eye, Edit3 } from "lucide-react";
+import { Sparkles, Palette, Loader2, Eye, Edit3, Lightbulb } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
@@ -41,6 +41,7 @@ export function BlogPostFormModal({ open, onOpenChange, post, onSave, isSaving }
   const [content, setContent] = useState("");
   const [generatingContent, setGeneratingContent] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [suggestingTitle, setSuggestingTitle] = useState(false);
 
   useEffect(() => {
     if (post) {
@@ -65,6 +66,25 @@ export function BlogPostFormModal({ open, onOpenChange, post, onSave, isSaving }
   const handleTitleChange = (value: string) => {
     setTitle(value);
     if (!post) setSlug(slugify(value));
+  };
+
+  const handleSuggestTitle = async () => {
+    setSuggestingTitle(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("suggest-blog-title", {
+        body: { category: category || null },
+      });
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+      const suggested = data.title || "";
+      setTitle(suggested);
+      if (!post) setSlug(slugify(suggested));
+      toast.success("Título sugerido com sucesso!");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao sugerir título");
+    } finally {
+      setSuggestingTitle(false);
+    }
   };
 
   const handleGenerateContent = async () => {
@@ -139,9 +159,26 @@ export function BlogPostFormModal({ open, onOpenChange, post, onSave, isSaving }
         </DialogHeader>
 
         <div className="space-y-5 py-2">
-          {/* Title + AI button */}
+          {/* Title + AI buttons */}
           <div className="space-y-2">
-            <Label>Título</Label>
+            <div className="flex items-center justify-between">
+              <Label>Título</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleSuggestTitle}
+                disabled={suggestingTitle}
+                className="text-xs gap-1"
+              >
+                {suggestingTitle ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Lightbulb className="h-3 w-3" />
+                )}
+                💡 Sugerir Título
+              </Button>
+            </div>
             <div className="flex gap-2">
               <Input
                 value={title}
