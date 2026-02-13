@@ -44,7 +44,7 @@ export default function AdminInfluencers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("companies")
-        .select("id, name, signup_source, created_at, plan_status")
+        .select("id, name, signup_source, created_at, plan_status, monthly_price")
         .like("signup_source", "inf:%");
       if (error) throw error;
       return data || [];
@@ -53,6 +53,9 @@ export default function AdminInfluencers() {
 
   const getLinkedCount = (code: string) => 
     (linkedCompanies || []).filter(c => c.signup_source === `inf:${code}`).length;
+
+  const getLinkedLeads = (code: string) =>
+    (linkedCompanies || []).filter(c => c.signup_source === `inf:${code}`);
 
   const copyLink = (code: string) => {
     navigator.clipboard.writeText(`${siteUrl}/auth?tab=signup&ref=${code}`);
@@ -218,6 +221,67 @@ export default function AdminInfluencers() {
             </CardContent>
           </Card>
         )}
+
+        {/* Leads Section */}
+        {selectedId && (() => {
+          const selectedInf = influencers.find(i => i.id === selectedId);
+          if (!selectedInf) return null;
+          const leads = getLinkedLeads(selectedInf.referral_code);
+          const statusLabels: Record<string, { label: string; variant: "default" | "secondary" | "destructive" }> = {
+            active: { label: "Ativo", variant: "default" },
+            trial: { label: "Trial", variant: "secondary" },
+            cancelled: { label: "Cancelado", variant: "destructive" },
+            expired: { label: "Expirado", variant: "destructive" },
+          };
+          return (
+            <Card className="bg-slate-800 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Leads Vinculados — {selectedInf.name} ({leads.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-slate-700">
+                      <TableHead className="text-slate-300">Nome</TableHead>
+                      <TableHead className="text-slate-300">Data de Cadastro</TableHead>
+                      <TableHead className="text-slate-300">Status</TableHead>
+                      <TableHead className="text-slate-300">Valor Mensal</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {leads.map((lead) => {
+                      const ls = statusLabels[lead.plan_status || ""] || { label: lead.plan_status || "—", variant: "secondary" as const };
+                      return (
+                        <TableRow key={lead.id} className="border-slate-700">
+                          <TableCell className="text-white font-medium">{lead.name}</TableCell>
+                          <TableCell className="text-slate-300">
+                            {new Date(lead.created_at || "").toLocaleDateString("pt-BR")}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={ls.variant}>{ls.label}</Badge>
+                          </TableCell>
+                          <TableCell className="text-slate-300">
+                            R$ {(Number(lead.monthly_price) || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {!leads.length && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-slate-400 py-6">
+                          Nenhum lead vinculado a este influenciador
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          );
+        })()}
       </div>
 
       <InfluencerFormModal
