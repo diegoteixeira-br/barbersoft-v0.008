@@ -7,7 +7,8 @@ import {
   Settings, 
   LogOut,
   Shield,
-  Handshake
+  Handshake,
+  FileText
 } from "lucide-react";
 
 const adminNavItems = [
@@ -31,6 +32,11 @@ const adminNavItems = [
     to: "/admin/influencers", 
     icon: Handshake, 
     label: "Influenciadores" 
+  },
+  { 
+    to: "/admin/blog", 
+    icon: FileText, 
+    label: "Blog" 
   },
   { 
     to: "/admin/settings", 

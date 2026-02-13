@@ -33,6 +33,7 @@ import AdminCompanies from "./pages/admin/AdminCompanies";
 import AdminFeedbacks from "./pages/admin/AdminFeedbacks";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminInfluencers from "./pages/admin/AdminInfluencers";
+import AdminBlog from "./pages/admin/AdminBlog";
 
 // Institutional pages
 import API from "./pages/institucional/API";
@@ -106,6 +107,7 @@ const App = () => (
             <Route path="/admin/companies" element={<SuperAdminGuard><AdminCompanies /></SuperAdminGuard>} />
             <Route path="/admin/feedbacks" element={<SuperAdminGuard><AdminFeedbacks /></SuperAdminGuard>} />
             <Route path="/admin/influencers" element={<SuperAdminGuard><AdminInfluencers /></SuperAdminGuard>} />
+            <Route path="/admin/blog" element={<SuperAdminGuard><AdminBlog /></SuperAdminGuard>} />
             <Route path="/admin/settings" element={<SuperAdminGuard><AdminSettings /></SuperAdminGuard>} />
             
             {/* Institutional Pages */}

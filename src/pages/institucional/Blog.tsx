@@ -1,18 +1,68 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { InstitutionalLayout } from '@/layouts/InstitutionalLayout';
 import { SEOHead } from '@/components/seo/SEOHead';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, ArrowRight } from 'lucide-react';
-import { blogPosts, categories } from '@/data/blogPosts';
+import { blogPosts as staticPosts, categories } from '@/data/blogPosts';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+interface UnifiedPost {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  image: string;
+  date: string;
+  readTime: string;
+}
 
 const Blog = () => {
   const [selectedCategory, setSelectedCategory] = useState('Todos');
 
-  const filteredPosts = selectedCategory === 'Todos' 
-    ? blogPosts 
-    : blogPosts.filter(post => post.category === selectedCategory);
+  const { data: dbPosts = [] } = useQuery({
+    queryKey: ['public-blog-posts'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('blog_posts' as any)
+        .select('*')
+        .order('created_at', { ascending: false });
+      return (data || []) as any[];
+    },
+  });
+
+  // Merge static + DB posts, DB posts first
+  const allPosts: UnifiedPost[] = [
+    ...dbPosts.map((p: any) => ({
+      id: p.id,
+      slug: p.slug,
+      title: p.title,
+      excerpt: p.excerpt || '',
+      category: p.category || 'Tecnologia',
+      image: p.image_url || '/placeholder.svg',
+      date: format(new Date(p.created_at), "dd 'de' MMMM, yyyy", { locale: ptBR }),
+      readTime: p.read_time || '5 min',
+    })),
+    ...staticPosts.map(p => ({
+      id: String(p.id),
+      slug: p.slug,
+      title: p.title,
+      excerpt: p.excerpt,
+      category: p.category,
+      image: p.image,
+      date: p.date,
+      readTime: p.readTime,
+    })),
+  ];
+
+  const filteredPosts = selectedCategory === 'Todos'
+    ? allPosts
+    : allPosts.filter(post => post.category === selectedCategory);
 
   const schema = {
     '@context': 'https://schema.org',
