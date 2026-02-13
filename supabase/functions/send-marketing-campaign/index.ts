@@ -66,14 +66,49 @@ serve(async (req) => {
 
     console.log(`User ${user.id} sending marketing campaign`);
 
-    // Parse request body
+    // Parse and validate request body
     const body: RequestBody = await req.json();
     const { message_template, targets, unit_id, media_url, media_type } = body;
 
     if (!message_template || !targets || targets.length === 0 || !unit_id) {
-      console.error("Invalid request body:", body);
       return new Response(
         JSON.stringify({ error: "Dados inválidos. Forneça message_template, targets e unit_id." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate message template length
+    if (message_template.length > 2000) {
+      return new Response(
+        JSON.stringify({ error: "Mensagem muito longa. Máximo de 2000 caracteres." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Limit number of recipients per campaign
+    if (targets.length > 500) {
+      return new Response(
+        JSON.stringify({ error: "Máximo de 500 destinatários por campanha." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate media_url if provided (must be HTTPS)
+    if (media_url && !media_url.startsWith("https://")) {
+      return new Response(
+        JSON.stringify({ error: "URL de mídia deve usar HTTPS." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate phone numbers - must contain only digits after cleanup, 10-11 digits (Brazilian format)
+    const invalidPhones = targets.filter((t) => {
+      const clean = t.phone.replace(/\D/g, "").replace(/^55/, "");
+      return clean.length < 10 || clean.length > 11;
+    });
+    if (invalidPhones.length > 0) {
+      return new Response(
+        JSON.stringify({ error: `${invalidPhones.length} número(s) de telefone inválido(s).` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

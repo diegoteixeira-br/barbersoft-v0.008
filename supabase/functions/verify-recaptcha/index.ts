@@ -6,8 +6,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const RECAPTCHA_SITE_KEY = "6Le2q2EsAAAAALT1XXCEYyPsT3gfauLb_0JgYXs7";
-const GOOGLE_CLOUD_PROJECT_ID = "n8n-drive-476323";
+const RECAPTCHA_SITE_KEY = Deno.env.get("RECAPTCHA_SITE_KEY");
+const GOOGLE_CLOUD_PROJECT_ID = Deno.env.get("GOOGLE_CLOUD_PROJECT_ID");
 
 interface RecaptchaRequest {
   token: string;
@@ -30,8 +30,8 @@ serve(async (req) => {
     }
 
     const apiKey = Deno.env.get("RECAPTCHA_SECRET_KEY");
-    if (!apiKey) {
-      console.error("RECAPTCHA_SECRET_KEY not configured");
+    if (!apiKey || !RECAPTCHA_SITE_KEY || !GOOGLE_CLOUD_PROJECT_ID) {
+      console.error("reCAPTCHA configuration missing");
       return new Response(
         JSON.stringify({ success: false, error: "Configuração inválida" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
