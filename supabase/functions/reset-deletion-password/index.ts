@@ -97,8 +97,8 @@ serve(async (req: Request) => {
 
       const businessName = companyData?.name || "Sua Barbearia";
 
-      // Build reset URL - use Lovable preview URL
-      const resetUrl = `https://id-preview--4dc8944f-b198-416a-801f-e7094b4a26df.lovable.app/reset-deletion-password?token=${token}`;
+      // Build reset URL - use production domain
+      const resetUrl = `https://barbersoft.com.br/reset-deletion-password?token=${token}`;
 
       // Send email via Resend
       try {
