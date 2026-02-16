@@ -1,18 +1,73 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUnit } from "@/contexts/UnitContext";
 import { useMarketingSettings } from "@/hooks/useMarketingSettings";
 import { format, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+// Global flag to track if speech has been unlocked by user gesture
+let speechUnlocked = false;
+
+function unlockSpeechSynthesis() {
+  if (speechUnlocked) return;
+  if (!('speechSynthesis' in window)) return;
+  
+  // Create a silent utterance to unlock speech synthesis
+  const utterance = new SpeechSynthesisUtterance('');
+  utterance.volume = 0;
+  utterance.lang = 'pt-BR';
+  speechSynthesis.speak(utterance);
+  speechUnlocked = true;
+  console.log('[Notification] Speech synthesis unlocked by user gesture');
+}
+
 export function useAppointmentNotification() {
   const { currentUnitId } = useCurrentUnit();
   const { settings } = useMarketingSettings();
   const processedInsertIdsRef = useRef<Set<string>>(new Set());
-  const processedCancelIdsRef = useRef<Set<string>>(new Set());
+  const processedUpdateKeysRef = useRef<Set<string>>(new Set());
+  const settingsRef = useRef(settings);
+
+  // Keep settings ref up to date to avoid stale closures
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
+
+  // Unlock speech synthesis on first user interaction
+  useEffect(() => {
+    const handleInteraction = () => {
+      unlockSpeechSynthesis();
+      // Remove listeners after first interaction
+      document.removeEventListener('click', handleInteraction);
+      document.removeEventListener('touchstart', handleInteraction);
+      document.removeEventListener('keydown', handleInteraction);
+    };
+
+    document.addEventListener('click', handleInteraction);
+    document.addEventListener('touchstart', handleInteraction);
+    document.addEventListener('keydown', handleInteraction);
+
+    return () => {
+      document.removeEventListener('click', handleInteraction);
+      document.removeEventListener('touchstart', handleInteraction);
+      document.removeEventListener('keydown', handleInteraction);
+    };
+  }, []);
+
+  // Preload voices
+  useEffect(() => {
+    if ('speechSynthesis' in window) {
+      speechSynthesis.getVoices();
+      speechSynthesis.onvoiceschanged = () => {
+        speechSynthesis.getVoices();
+      };
+    }
+  }, []);
 
   useEffect(() => {
     if (!currentUnitId) return;
+
+    console.log('[Notification] Subscribing to realtime for unit:', currentUnitId);
 
     const channel = supabase
       .channel('appointment-notifications')
@@ -35,9 +90,11 @@ export function useAppointmentNotification() {
             source: string | null;
           };
 
+          console.log('[Notification] New appointment detected:', newAppointment.id, 'source:', newAppointment.source);
+
           // Only notify for WhatsApp appointments
           if (newAppointment.source !== 'whatsapp') {
-            console.log('Skipping notification: not a WhatsApp appointment');
+            console.log('[Notification] Skipping: not a WhatsApp appointment');
             return;
           }
 
@@ -45,8 +102,11 @@ export function useAppointmentNotification() {
           if (processedInsertIdsRef.current.has(newAppointment.id)) return;
           processedInsertIdsRef.current.add(newAppointment.id);
 
-          // Check if vocal notification is enabled
-          if (!settings?.vocal_notification_enabled) return;
+          // Check if vocal notification is enabled (use ref for fresh value)
+          if (!settingsRef.current?.vocal_notification_enabled) {
+            console.log('[Notification] Skipping: vocal notification disabled');
+            return;
+          }
 
           // Fetch barber and service details
           let barberName = "um profissional";
@@ -80,7 +140,7 @@ export function useAppointmentNotification() {
 
           const message = `${newAppointment.client_name} agendou com ${barberName} o serviço ${serviceName} para ${dateText} às ${timeText}`;
 
-          // Speak using Web Speech API
+          console.log('[Notification] Speaking:', message);
           speak(message);
         }
       )
@@ -105,6 +165,8 @@ export function useAppointmentNotification() {
             status: string;
           };
 
+          console.log('[Notification] Appointment updated:', updatedAppointment.id, 'status:', oldAppointment.status, '->', updatedAppointment.status, 'source:', updatedAppointment.source);
+
           // Only notify for WhatsApp appointments
           if (updatedAppointment.source !== 'whatsapp') {
             return;
@@ -115,47 +177,51 @@ export function useAppointmentNotification() {
 
           // === CONFIRMAÇÃO: status muda de pending para confirmed ===
           if (updatedAppointment.status === 'confirmed' && oldAppointment.status === 'pending') {
-            // Avoid duplicate notifications
             const confirmKey = `confirm_${updatedAppointment.id}`;
-            if (processedCancelIdsRef.current.has(confirmKey)) return;
-            processedCancelIdsRef.current.add(confirmKey);
+            if (processedUpdateKeysRef.current.has(confirmKey)) return;
+            processedUpdateKeysRef.current.add(confirmKey);
 
-            // Check if vocal confirmation notification is enabled
-            if (!settings?.vocal_confirmation_enabled) return;
+            if (!settingsRef.current?.vocal_confirmation_enabled) return;
 
             const message = `${updatedAppointment.client_name} confirmou presença para o agendamento das ${timeText}`;
+            console.log('[Notification] Speaking confirmation:', message);
             speak(message);
             return;
           }
 
           // === CANCELAMENTO: status muda para cancelled ===
           if (updatedAppointment.status === 'cancelled' && oldAppointment.status !== 'cancelled') {
-            // Avoid duplicate notifications
-            if (processedCancelIdsRef.current.has(updatedAppointment.id)) return;
-            processedCancelIdsRef.current.add(updatedAppointment.id);
+            const cancelKey = `cancel_${updatedAppointment.id}`;
+            if (processedUpdateKeysRef.current.has(cancelKey)) return;
+            processedUpdateKeysRef.current.add(cancelKey);
 
-            // Check if cancellation vocal notification is enabled
-            if (!settings?.vocal_cancellation_enabled) return;
+            if (!settingsRef.current?.vocal_cancellation_enabled) return;
 
             const message = `O agendamento de ${updatedAppointment.client_name} às ${timeText} foi cancelado`;
+            console.log('[Notification] Speaking cancellation:', message);
             speak(message);
             return;
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[Notification] Subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentUnitId, settings?.vocal_notification_enabled, settings?.vocal_cancellation_enabled, settings?.vocal_confirmation_enabled]);
+  }, [currentUnitId]);
 }
 
 function speak(text: string) {
   if (!('speechSynthesis' in window)) {
-    console.warn('Web Speech API not supported');
+    console.warn('[Notification] Web Speech API not supported');
     return;
   }
+
+  // Cancel any ongoing speech
+  speechSynthesis.cancel();
 
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'pt-BR';
@@ -166,7 +232,18 @@ function speak(text: string) {
   const voices = speechSynthesis.getVoices();
   const ptVoice = voices.find(v => v.lang.includes('pt-BR')) 
     || voices.find(v => v.lang.includes('pt'));
-  if (ptVoice) utterance.voice = ptVoice;
+  if (ptVoice) {
+    utterance.voice = ptVoice;
+    console.log('[Notification] Using voice:', ptVoice.name);
+  }
+
+  utterance.onerror = (event) => {
+    console.error('[Notification] Speech error:', event.error);
+  };
+
+  utterance.onend = () => {
+    console.log('[Notification] Speech completed');
+  };
 
   speechSynthesis.speak(utterance);
 }
