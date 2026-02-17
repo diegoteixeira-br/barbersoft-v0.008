@@ -2,12 +2,8 @@
   RewriteEngine On
   RewriteBase /
 
-  # Proxy blog share requests to Supabase edge function for OG previews
-  RewriteRule ^share/blog/(.+)$ https://lgrugpsyewvinlkgmeve.supabase.co/functions/v1/blog-share?slug=$1 [P,L]
-
-  # Fallback redirect if mod_proxy is not available
-  RewriteCond %{REQUEST_URI} ^/share/blog/(.+)$
-  RewriteRule ^share/blog/(.+)$ https://lgrugpsyewvinlkgmeve.supabase.co/functions/v1/blog-share?slug=$1 [R=302,L]
+  # Proxy PHP local para preview de compartilhamento do blog
+  RewriteRule ^share/blog/(.+)$ share.php?slug=$1 [L,QSA]
 
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
