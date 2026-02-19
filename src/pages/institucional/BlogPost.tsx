@@ -5,7 +5,7 @@ import { SEOHead } from '@/components/seo/SEOHead';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, Clock, ArrowLeft, Share2, Facebook, MessageCircle } from 'lucide-react';
-import { blogPosts } from '@/data/blogPosts';
+
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import ReactMarkdown from 'react-markdown';
@@ -15,10 +15,6 @@ import { ptBR } from 'date-fns/locale';
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
 
-  // Try to find in static posts first
-  const staticPost = blogPosts.find(p => p.slug === slug);
-
-  // Also check DB
   const { data: dbPost, isLoading } = useQuery({
     queryKey: ['blog-post', slug],
     queryFn: async () => {
@@ -29,10 +25,26 @@ const BlogPost = () => {
         .maybeSingle();
       return data as any;
     },
-    enabled: !staticPost && !!slug,
+    enabled: !!slug,
   });
 
-  if (isLoading && !staticPost) {
+  // Fetch related posts from DB
+  const { data: dbRelatedPosts = [] } = useQuery({
+    queryKey: ['blog-related', dbPost?.category, dbPost?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('blog_posts' as any)
+        .select('*')
+        .eq('category', dbPost.category)
+        .neq('id', dbPost.id)
+        .order('created_at', { ascending: false })
+        .limit(2);
+      return (data || []) as any[];
+    },
+    enabled: !!dbPost?.category && !!dbPost?.id,
+  });
+
+  if (isLoading) {
     return (
       <InstitutionalLayout breadcrumbs={[{ label: 'Blog', href: '/blog' }, { label: 'Carregando...' }]}>
         <div className="text-center py-12">Carregando...</div>
@@ -40,22 +52,7 @@ const BlogPost = () => {
     );
   }
 
-  // Build a unified post object
-  const post = staticPost
-    ? {
-        title: staticPost.title,
-        excerpt: staticPost.excerpt,
-        category: staticPost.category,
-        image: staticPost.image,
-        date: staticPost.date,
-        readTime: staticPost.readTime,
-        author: staticPost.author,
-        content: staticPost.content,
-        slug: staticPost.slug,
-        isMarkdown: false,
-        id: staticPost.id,
-      }
-    : dbPost
+  const post = dbPost
     ? {
         title: dbPost.title,
         excerpt: dbPost.excerpt || '',
@@ -75,10 +72,15 @@ const BlogPost = () => {
     return <Navigate to="/blog" replace />;
   }
 
-  // Related posts from static
-  const relatedPosts = blogPosts
-    .filter(p => p.category === post.category && String(p.id) !== String(post.id))
-    .slice(0, 2);
+  const relatedPosts = dbRelatedPosts.map((rp: any) => ({
+    id: rp.id,
+    slug: rp.slug,
+    title: rp.title,
+    category: rp.category || '',
+    image: rp.image_url || '/placeholder.svg',
+    date: format(new Date(rp.created_at), "dd MMM yyyy", { locale: ptBR }),
+    readTime: rp.read_time || '5 min',
+  }));
 
   const shareUrl = `https://lgrugpsyewvinlkgmeve.supabase.co/functions/v1/blog-share?slug=${post.slug}`;
   const encodedShareUrl = encodeURIComponent(shareUrl);
@@ -137,19 +139,7 @@ const BlogPost = () => {
 
         {/* Content */}
         <div className="prose prose-lg dark:prose-invert max-w-none mb-12">
-          {post.isMarkdown ? (
-            <ReactMarkdown>{post.content}</ReactMarkdown>
-          ) : (
-            post.content.split('\n').map((paragraph: string, index: number) => {
-              if (paragraph.startsWith('## ')) return <h2 key={index} className="text-2xl font-bold mt-8 mb-4">{paragraph.replace('## ', '')}</h2>;
-              if (paragraph.startsWith('### ')) return <h3 key={index} className="text-xl font-semibold mt-6 mb-3">{paragraph.replace('### ', '')}</h3>;
-              if (paragraph.startsWith('- ')) return <li key={index} className="ml-6 mb-2">{paragraph.replace('- ', '')}</li>;
-              if (paragraph.startsWith('**') && paragraph.endsWith('**')) return <p key={index} className="font-bold mb-4">{paragraph.replace(/\*\*/g, '')}</p>;
-              if (paragraph.startsWith('```')) return null;
-              if (paragraph.trim()) return <p key={index} className="mb-4 text-muted-foreground leading-relaxed">{paragraph}</p>;
-              return null;
-            })
-          )}
+          <ReactMarkdown>{post.content}</ReactMarkdown>
         </div>
 
         {/* Share Buttons */}
