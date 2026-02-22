@@ -66,16 +66,18 @@ Deno.serve(async (req) => {
 
     // Fetch user emails from auth.users
     const ownerEmails: Record<string, string> = {};
+    const emailConfirmed: Record<string, boolean> = {};
     
     for (const ownerId of ownerIds) {
       const { data: userData } = await supabaseAdmin.auth.admin.getUserById(ownerId);
       if (userData?.user?.email) {
         ownerEmails[ownerId] = userData.user.email;
+        emailConfirmed[ownerId] = !!userData.user.email_confirmed_at;
       }
     }
 
     return new Response(
-      JSON.stringify({ ownerEmails }),
+      JSON.stringify({ ownerEmails, emailConfirmed }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {

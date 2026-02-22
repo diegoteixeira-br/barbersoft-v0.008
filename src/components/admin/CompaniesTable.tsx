@@ -31,7 +31,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { AdminCompany, useAdminCompanies } from "@/hooks/useAdminCompanies";
-import { MoreHorizontal, Search, Ban, CheckCircle, Clock, Eye, Trash2, UserX, Handshake, RefreshCw, X, ArrowUpDown, RefreshCcw } from "lucide-react";
+import { MoreHorizontal, Search, Ban, CheckCircle, CheckCircle2, Clock, Eye, Trash2, UserX, Handshake, RefreshCw, X, ArrowUpDown, RefreshCcw } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatDistanceToNow, format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CompanyDetailsModal } from "./CompanyDetailsModal";
@@ -163,7 +164,25 @@ export function CompaniesTable() {
                             <Handshake className="h-4 w-4 text-purple-400" />
                           )}
                         </div>
-                        <p className="text-xs text-slate-400">{company.owner_email || "Email não disponível"}</p>
+                        <div className="flex items-center gap-1">
+                          <p className="text-xs text-slate-400">{company.owner_email || "Email não disponível"}</p>
+                          {company.owner_email && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  {company.email_confirmed ? (
+                                    <CheckCircle2 className="h-3.5 w-3.5 text-green-400 shrink-0" />
+                                  ) : (
+                                    <Clock className="h-3.5 w-3.5 text-yellow-400 shrink-0" />
+                                  )}
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {company.email_confirmed ? "Email confirmado" : "Email pendente de confirmação"}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
                         {company.is_blocked && (
                           <span className="text-xs text-red-400">Bloqueado</span>
                         )}

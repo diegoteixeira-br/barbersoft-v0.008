@@ -25,6 +25,8 @@ export interface AdminCompany {
   partner_ends_at: string | null;
   partner_notes: string | null;
   partner_renewed_count: number | null;
+  // Email confirmation
+  email_confirmed?: boolean;
 }
 
 interface ActivatePartnershipParams {
@@ -70,20 +72,25 @@ export function useAdminCompanies() {
       
       // Fetch owner emails
       let ownerEmails: Record<string, string> = {};
+      let emailConfirmed: Record<string, boolean> = {};
       try {
         const response = await supabase.functions.invoke("get-company-owners");
         if (response.data?.ownerEmails) {
           ownerEmails = response.data.ownerEmails;
         }
+        if (response.data?.emailConfirmed) {
+          emailConfirmed = response.data.emailConfirmed;
+        }
       } catch (e) {
         console.error("Failed to fetch owner emails:", e);
       }
       
-      // Map emails and business names to companies
+      // Map emails, business names and email confirmed to companies
       return (data || []).map(company => ({
         ...company,
         business_name: businessNames[company.owner_user_id] || undefined,
-        owner_email: ownerEmails[company.owner_user_id] || undefined
+        owner_email: ownerEmails[company.owner_user_id] || undefined,
+        email_confirmed: emailConfirmed[company.owner_user_id] ?? undefined
       }));
     }
   });
